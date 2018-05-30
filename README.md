@@ -11,6 +11,7 @@ Here are the things you will need:
 
 * [NTL 11.0.0](http://www.shoup.net/ntl/)
 * [GMP(for NTL)](https://gmplib.org/)
+* [primecount](https://github.com/kimwalisch/primecount)
 
 To run, use the following commands:
 

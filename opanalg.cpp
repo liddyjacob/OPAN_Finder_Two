@@ -22,9 +22,10 @@ void OPAN(int d, bool verbose, bool steps, string fname){
     forest.push_back(Tree());
     Tree& tree = forest.back();
 
-    vector<Node*> leaves; /* Collects the minimum(*1) leaves of the tree */
-    vector<vector<ZZ> > exp_seqs; /* Exponent sequences for the prime sequence(The prime sequence is kept track of 
-                               * by the tree) */ 
+    vector<Node*> leaves; /* For parallel processing*/
+    vector<vector<ZZ> > exp_seqs; /* Exponent sequences for the prime sequence
+                                     (The prime sequence is kept track of 
+                                     by the tree) */ 
 
     bool growing = true; /* Flag that tells when to stop looking for prime sequences */
     std::vector<ZZ> primes; 
@@ -38,7 +39,7 @@ void OPAN(int d, bool verbose, bool steps, string fname){
         std::cout << "Hit enter for the next step\n";
         std::cin >> c;
       }
-      //Update(s, tree);
+      
 
       grow(tree, RR(3)); /* Grow the tree by a single prime */
       primes = strip_primes(tree); /* Get the current prime sequence */
@@ -62,10 +63,18 @@ void OPAN(int d, bool verbose, bool steps, string fname){
       }
 
       if (exp_find(primes, exp_seqs)){
-        leaves.push_back(tree.curr); /* For parallel proccessing */
+        //leaves.push_back(tree.curr); /* For parallel proccessing */
+
+        /* Applies the efficiency theorem */
+        Write(s, primes, exp_seqs); 
+        efficiency(primes, exp_seqs, s);
+        Write(s, primes, exp_seqs);
+
+        replace(tree, primes.back()); /* Result of the efficiency theorem */
+
         success(tree);
         Write(s, primes, exp_seqs);
-        //fail(tree); /* This line of code is used for parallel proccessing, it may seem out of place */
+        //fail(tree); /* For parallel proccessing, may seem out of place */
       } else {
         if (!cap_check(primes, forest, factors)){ /* Calculate cap_{factors} (P), determine if tree should stop growing */
           growing = fail(tree);
@@ -129,6 +138,48 @@ bool cap_check(vector<ZZ>& primes, vector<Tree>& forest, int& factors){
     /* Theorem tells us that we should modify the primes and cannot look here anymore */
     return false;
   }
+}
+
+
+void efficiency(vector<ZZ>& primes, vector<vector<ZZ> >& exp_seqs, Stats& s){
+  /* Assumes that input primes work with exp_seqs. */
+  
+  ZZ increment(2);
+  ZZ bad(0);
+  bool comedown = false;
+
+  while (increment >= ZZ(2)){//(last_exps == exp_seqs){        
+    vector<ZZ> new_primes = primes;
+    vector<vector<ZZ> > last_exps = exp_seqs;
+
+    ZZ prev = primes[primes.size() - 1];
+    ZZ next = NextPrime(prev + increment);
+    new_primes.pop_back();
+    new_primes.push_back(next);
+ 
+    if (bad != next){ 
+      exp_find(new_primes, exp_seqs);
+    } else {
+      exp_seqs.clear();
+    }
+
+    if (last_exps == exp_seqs){
+
+      if (!comedown){ increment *= ZZ(4); }
+      
+      primes = new_primes; // Move on to new primes
+
+    } else {
+             
+      comedown = true;
+      increment /= ZZ(4);
+      bad = next;
+      exp_seqs = last_exps;
+    }      
+  }
+
+
+
 }
 
 
